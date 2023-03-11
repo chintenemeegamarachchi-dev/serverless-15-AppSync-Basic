@@ -1,0 +1,51 @@
+service: app-sync-tutorial
+
+frameworkVersion: '3'
+
+custom:
+  region: ${opt:region, 'ap-southeast-2'}
+  stage: ${opt:stage, 'dev'}
+
+appSync:
+  name: ${self:custom.stage}-app-sync
+  authentication:
+    type: AMAZON_COGNITO_USER_POOLS
+    config:
+      userPoolId: !Ref cognitoUserPool
+      defaultAction: ALLOW
+      awsRegion: ${self:custom.region}
+  dataSources:
+    booksTable:
+      type: AMAZON_DYNAMODB
+      name: booksTable
+      config:
+        tableName: !Ref booksTable
+  resolvers:
+    getBookById:
+      type: Query
+      kind: UNIT
+      dataSource: booksTable
+      field: getBookById
+      request: './mapping-templates/Query.getBookById.request.vt'
+      response: './mapping-templates/Query.getBookById.response.vt'
+    createBook:
+      type: Mutation
+      kind: UNIT
+      dataSource: booksTable
+      field: createBook
+      request: './mapping-templates/Mutation.createBook.request.vt'
+      response: './mapping-templates/Mutation.createBook.response.vt'  
+
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: ${self:custom.stage}
+  region: ${self:custom.region}
+
+plugins:
+  - serverless-appsync-plugin
+
+resources:
+  Resources: 
+    ${file(./resources.yml)}

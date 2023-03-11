@@ -1,0 +1,107 @@
+# books table
+booksTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: ${self:provider.stage}-books
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: bookId
+        AttributeType: S
+    KeySchema:
+      - AttributeName: bookId
+        KeyType: HASH
+
+# user pool
+cognitoUserPool:
+  Type: AWS::Cognito::UserPool
+  Properties:
+    UserPoolName: ${self:provider.stage}-books-user-pool
+    UsernameAttributes:
+      - email
+    AutoVerifiedAttributes:
+      - email
+
+# user pool client
+cognitoUserPoolClient:
+  Type: AWS::Cognito::UserPoolClient
+  Properties:
+    ClientName: ${self:provider.stage}-books-user-pool-client
+    UserPoolId: !Ref cognitoUserPool
+
+ # admin group
+cognitoAdminGroup:
+  Type: AWS::Cognito::UserPoolGroup
+  Properties:
+    Description: "Admin users"
+    GroupName: "Admin"
+    Precedence: 0
+    RoleArn: !GetAtt cognitoAdminIAMRole.Arn
+    UserPoolId: !Ref cognitoUserPool
+
+cognitoAdminIAMRole:
+  Type: AWS::IAM::Role
+  Properties:
+    # AssumeRolePolicyDocument - Who's allowed to assume this role
+    AssumeRolePolicyDocument: 
+      Version: "2012-10-17"
+      Statement:
+        - Effect: Allow
+          Principal:
+            Federated:
+              - "cognito-identity.amazonaws.com"
+          Action:
+            - "sts:AssumeRoleWithWebIdentity"
+    Description: "Role addumed by admin "
+    # what is allowed by this role
+    Policies: 
+      - PolicyName: ${self:provider.stage}-books-admin-group-polciy
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "dynamodb:*"
+              Resource:
+                - !GetAtt booksTable.Arn          
+    RoleName: ${self:provider.stage}-books-admin-role
+
+
+ # customer group   
+cognitoCustomerGroup:
+  Type: AWS::Cognito::UserPoolGroup
+  Properties:
+    Description: "Customers"
+    GroupName: "Customers"
+    Precedence: 1
+    RoleArn: !GetAtt cognitoCustomerIAMRole.Arn
+    UserPoolId: !Ref cognitoUserPool
+
+cognitoCustomerIAMRole:
+  Type: AWS::IAM::Role
+  Properties:
+    # AssumeRolePolicyDocument - Who's allowed to assume this role
+    AssumeRolePolicyDocument: 
+      Version: "2012-10-17"
+      Statement:
+        - Effect: Allow
+          Principal:
+            Federated:
+              - "cognito-identity.amazonaws.com"
+          Action:
+            - "sts:AssumeRoleWithWebIdentity"
+    Description: "Role assumed by customer"
+    # what is allowed by this role
+    Policies: 
+      - PolicyName: ${self:provider.stage}-books-customer-polciy
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "dynamodb:GetItem"
+                - "dynamodb:Query"
+                - "dynamodb:BatchGetItem"
+              Resource:
+                - !GetAtt booksTable.Arn          
+    RoleName: ${self:provider.stage}-books-customer-role
+         
