@@ -3,12 +3,12 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { Amplify } from 'aws-amplify';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 
-import { Amplify, Auth } from 'aws-amplify';
 
 Amplify.configure({
     Auth: {
@@ -18,6 +18,14 @@ Amplify.configure({
         mandatorySignIn: true,
         }
     });
+
+const appSyncConfig = {
+  aws_appsync_graphqlEndpoint:'https://rfupvvc3zndmxiimqrz4toim7y.appsync-api.ap-southeast-2.amazonaws.com/graphql',
+  aws_appsync_region: 'ap-southeast-2',
+  aws_appsync_authenticationType: 'AMAZON_COGNITO_USER_POOLS'
+};
+
+Amplify.configure(appSyncConfig);    
 
 root.render(
   <React.StrictMode>
